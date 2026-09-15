@@ -204,7 +204,7 @@ fun NeetCountdownApp(
                 )
             }
 
-            // 5. Home Screen AppWidget Setup
+            // 2. Home Screen AppWidget Setup
             item {
                 WidgetPinCard(
                     state = uiState.countdown,
@@ -212,7 +212,7 @@ fun NeetCountdownApp(
                 )
             }
 
-            // 6. Push Alerts & Milestone Notification Controls
+            // 3. Push Alerts & Milestone Notification Controls
             item {
                 NotificationControlCard(
                     hasPermission = hasNotificationPermission,
@@ -236,7 +236,7 @@ fun NeetCountdownApp(
                 )
             }
 
-            // 8. NEET 2027 Countdown Milestone Timeline
+            // 4. NEET 2027 Countdown Milestone Timeline
             item {
                 MilestoneTimelineCard(milestones = uiState.milestones)
             }
@@ -244,13 +244,3 @@ fun NeetCountdownApp(
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(text = "NEET 2027 Countdown $name", modifier = modifier)
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MyApplicationTheme { Greeting("Preview") }
-}

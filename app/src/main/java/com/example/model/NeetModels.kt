@@ -114,10 +114,3 @@ data class ExamMilestone(
     val isPassed: Boolean
         get() = System.currentTimeMillis() >= epochMillis
 }
-
-data class HighYieldTopic(
-    val subject: String,
-    val chapter: String,
-    val weightage: String,
-    val keyTips: String
-)
