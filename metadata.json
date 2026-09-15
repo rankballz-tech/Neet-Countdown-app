@@ -1,0 +1,6 @@
+{
+  "name": "NEET 2027 Countdown",
+  "description": "Realtime countdown for NEET Exam on May 2, 2027 at 2:00 PM with home screen widget, deadline alerts, and study milestones.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
