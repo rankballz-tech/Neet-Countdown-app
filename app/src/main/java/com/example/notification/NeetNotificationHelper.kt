@@ -32,8 +32,21 @@ object NeetNotificationHelper {
                 vibrationPattern = longArrayOf(0, 250, 150, 250)
                 setShowBadge(true)
             }
+            val ongoingName = context.getString(R.string.notification_channel_ongoing_name)
+            val ongoingDesc = context.getString(R.string.notification_channel_ongoing_desc)
+            val ongoingChannel = NotificationChannel(
+                NeetConstants.CHANNEL_ONGOING_ID,
+                ongoingName,
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = ongoingDesc
+                enableVibration(false)
+                setShowBadge(false)
+            }
+
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+            notificationManager.createNotificationChannel(ongoingChannel)
         }
     }
 
@@ -249,5 +262,139 @@ object NeetNotificationHelper {
             AlarmManager.INTERVAL_DAY,
             pendingIntent
         )
+    }
+
+    fun scheduleWidgetPeriodicUpdates(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+        val intent = Intent(context, NeetAlarmReceiver::class.java).apply {
+            action = NeetConstants.ACTION_UPDATE_WIDGET
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            8001,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Target the top of the next minute (:00 seconds)
+        val now = System.currentTimeMillis()
+        val nextMinute = now + (60_000L - (now % 60_000L))
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC,
+                    nextMinute,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC,
+                    nextMinute,
+                    pendingIntent
+                )
+            }
+        } catch (e: SecurityException) {
+            alarmManager.set(AlarmManager.RTC, nextMinute, pendingIntent)
+        }
+    }
+
+    fun cancelWidgetPeriodicUpdates(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+        val intent = Intent(context, NeetAlarmReceiver::class.java).apply {
+            action = NeetConstants.ACTION_UPDATE_WIDGET
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            8001,
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        if (pendingIntent != null) {
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
+        }
+    }
+
+    fun isOngoingNotificationEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(NeetConstants.PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(NeetConstants.KEY_ONGOING_NOTIFICATION_ENABLED, true)
+    }
+
+    fun setOngoingNotificationEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(NeetConstants.PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(NeetConstants.KEY_ONGOING_NOTIFICATION_ENABLED, enabled).apply()
+        if (enabled) {
+            showOngoingCountdownNotification(context)
+        } else {
+            cancelOngoingCountdownNotification(context)
+        }
+    }
+
+    fun buildOngoingNotification(
+        context: Context,
+        state: CountdownState = CountdownState.calculate(isIstMode = true)
+    ): android.app.Notification {
+        createNotificationChannel(context)
+        val targetEpochMillis = NeetConstants.TARGET_EPOCH_MILLIS
+
+        val launchIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            7001,
+            launchIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val refreshIntent = Intent(context, NeetAlarmReceiver::class.java).apply {
+            action = NeetConstants.ACTION_REFRESH_WIDGET
+        }
+        val refreshPendingIntent = PendingIntent.getBroadcast(
+            context,
+            7002,
+            refreshIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val contentText = if (state.isExamStarted) {
+            "NEET 2027 in progress / concluded"
+        } else {
+            "${state.days}d ${state.hours}h ${state.minutes}m ${state.seconds}s remaining • Aim 720/720"
+        }
+
+        return NotificationCompat.Builder(context, NeetConstants.CHANNEL_ONGOING_ID)
+            .setSmallIcon(R.drawable.ic_medical_cross)
+            .setContentTitle("NEET UG 2027 • ${state.days} Days Left")
+            .setContentText(contentText)
+            .setSubText("Live Countdown")
+            .setUsesChronometer(true)
+            .setChronometerCountDown(true)
+            .setWhen(targetEpochMillis)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(pendingIntent)
+            .addAction(R.drawable.ic_widget_refresh, "Sync Now", refreshPendingIntent)
+            .addAction(R.drawable.ic_medical_cross, "Open App", pendingIntent)
+            .build()
+    }
+
+    fun showOngoingCountdownNotification(
+        context: Context,
+        state: CountdownState = CountdownState.calculate(isIstMode = true)
+    ) {
+        if (!hasNotificationPermission(context)) return
+        val notification = buildOngoingNotification(context, state)
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NeetConstants.ONGOING_NOTIFICATION_ID, notification)
+    }
+
+    fun cancelOngoingCountdownNotification(context: Context) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(NeetConstants.ONGOING_NOTIFICATION_ID)
     }
 }

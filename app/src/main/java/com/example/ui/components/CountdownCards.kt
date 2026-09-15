@@ -1,6 +1,12 @@
 package com.example.ui.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -35,12 +41,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -60,6 +69,17 @@ fun CountdownHeroSection(
     onToggleTimezone: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse_live")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse_alpha"
+    )
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -99,6 +119,7 @@ fun CountdownHeroSection(
                                 .size(8.dp)
                                 .clip(CircleShape)
                                 .background(AccentEmerald)
+                                .alpha(pulseAlpha)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
@@ -289,8 +310,17 @@ fun TimeUnitBox(
             AnimatedContent(
                 targetState = value,
                 transitionSpec = {
-                    slideInVertically { height -> height } + fadeIn() togetherWith
-                            slideOutVertically { height -> -height } + fadeOut()
+                    if (isSeconds) {
+                        // High-speed, jitter-free fade for seconds to prevent layout stutter
+                        fadeIn(animationSpec = tween(120)) togetherWith
+                                fadeOut(animationSpec = tween(120))
+                    } else {
+                        // Refined gentle vertical transition for days, hours, and minutes
+                        slideInVertically(animationSpec = tween(220)) { height -> height / 2 } +
+                                fadeIn(animationSpec = tween(220)) togetherWith
+                                slideOutVertically(animationSpec = tween(220)) { height -> -height / 2 } +
+                                fadeOut(animationSpec = tween(220))
+                    }
                 },
                 label = "time_unit_$label"
             ) { targetValue ->
@@ -299,6 +329,7 @@ fun TimeUnitBox(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Black,
                     fontFamily = FontFamily.Monospace,
+                    style = TextStyle(fontFeatureSettings = "tnum"),
                     color = when {
                         highlight -> PrimaryCyan
                         isSeconds -> AccentEmerald

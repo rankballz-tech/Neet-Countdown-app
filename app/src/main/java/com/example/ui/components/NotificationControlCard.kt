@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.WarningAmber
@@ -55,6 +56,8 @@ fun NotificationControlCard(
     dailyReminderMinute: Int,
     onToggleDailyReminder: (Boolean) -> Unit,
     onSelectTime: (Int, Int) -> Unit,
+    ongoingNotificationEnabled: Boolean,
+    onToggleOngoingNotification: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -171,6 +174,71 @@ fun NotificationControlCard(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Persistent Background & Lock Screen Live Countdown Switch Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF111827), RoundedCornerShape(12.dp))
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.HourglassBottom,
+                        contentDescription = "Background Live Countdown",
+                        tint = AccentEmerald,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Persistent Background Ticker",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = AccentEmerald.copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    text = "LIVE",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AccentEmerald,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Ticks in status bar & lock screen • Survives device reboot",
+                            fontSize = 11.sp,
+                            color = Color(0xFF94A3B8)
+                        )
+                    }
+                }
+
+                Switch(
+                    checked = ongoingNotificationEnabled,
+                    onCheckedChange = onToggleOngoingNotification,
+                    modifier = Modifier.testTag("switch_ongoing_notification"),
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = AccentEmerald,
+                        uncheckedThumbColor = Color(0xFF94A3B8),
+                        uncheckedTrackColor = DarkNavyBorder
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Daily Reminder Switch Row
             Row(

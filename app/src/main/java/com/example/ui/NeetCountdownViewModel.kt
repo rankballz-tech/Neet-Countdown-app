@@ -30,6 +30,7 @@ data class NeetUiState(
     val dailyReminderEnabled: Boolean = true,
     val dailyReminderHour: Int = 8,
     val dailyReminderMinute: Int = 0,
+    val ongoingNotificationEnabled: Boolean = true,
     val snackbarMessage: String? = null
 )
 
@@ -43,6 +44,7 @@ class NeetCountdownViewModel(application: Application) : AndroidViewModel(applic
             dailyReminderEnabled = prefs.getBoolean(NeetConstants.KEY_DAILY_REMINDER_ENABLED, true),
             dailyReminderHour = prefs.getInt(NeetConstants.KEY_DAILY_REMINDER_HOUR, 8),
             dailyReminderMinute = prefs.getInt(NeetConstants.KEY_DAILY_REMINDER_MINUTE, 0),
+            ongoingNotificationEnabled = prefs.getBoolean(NeetConstants.KEY_ONGOING_NOTIFICATION_ENABLED, true),
             milestones = NeetNotificationHelper.getUpcomingMilestones()
         )
     )
@@ -60,13 +62,24 @@ class NeetCountdownViewModel(application: Application) : AndroidViewModel(applic
             )
         }
 
-        // Periodic Countdown Ticking
+        // Initialize and arm background live countdown notification and widget
+        if (_uiState.value.ongoingNotificationEnabled) {
+            NeetNotificationHelper.showOngoingCountdownNotification(context)
+        }
+        NeetNotificationHelper.scheduleWidgetPeriodicUpdates(context)
+        NeetCountdownWidgetProvider.updateAllWidgets(context)
+
+        // Precision countdown ticking synchronized directly to system clock second boundary
         viewModelScope.launch {
             while (isActive) {
                 val isIst = _uiState.value.isIstMode
                 val updatedState = CountdownState.calculate(isIstMode = isIst)
                 _uiState.update { it.copy(countdown = updatedState) }
-                delay(1000)
+
+                // Sleep precisely until the start of the next second to prevent clock drift/stutter
+                val now = System.currentTimeMillis()
+                val millisUntilNextSecond = (1000L - (now % 1000L)).coerceIn(50L, 1000L)
+                delay(millisUntilNextSecond)
             }
         }
     }
@@ -124,6 +137,9 @@ class NeetCountdownViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun pinAppWidgetToHomeScreen(context: Context): Boolean {
+        NeetNotificationHelper.scheduleWidgetPeriodicUpdates(context)
+        NeetCountdownWidgetProvider.updateAllWidgets(context)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val provider = ComponentName(context, NeetCountdownWidgetProvider::class.java)
@@ -136,12 +152,32 @@ class NeetCountdownViewModel(application: Application) : AndroidViewModel(applic
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 appWidgetManager.requestPinAppWidget(provider, null, successPendingIntent)
-                setSnackbar("Widget pin prompt displayed on home screen!")
+                setSnackbar("Widget pin prompt displayed! Widget will auto-update in background.")
                 return true
             }
         }
         setSnackbar("Touch and hold on home screen to add 'NEET 2027 Countdown' widget.")
         return false
+    }
+
+    fun toggleOngoingNotification(context: Context, enabled: Boolean) {
+        NeetNotificationHelper.setOngoingNotificationEnabled(context, enabled)
+        _uiState.update { it.copy(ongoingNotificationEnabled = enabled) }
+        if (enabled) {
+            setSnackbar("Live background countdown notification active in status bar & lock screen!")
+        } else {
+            setSnackbar("Background countdown notification turned off.")
+        }
+    }
+
+    fun refreshAll(context: Context) {
+        NeetCountdownWidgetProvider.updateAllWidgets(context)
+        NeetNotificationHelper.scheduleWidgetPeriodicUpdates(context)
+        com.example.service.NeetLiveWidgetService.start(context)
+        if (_uiState.value.ongoingNotificationEnabled) {
+            NeetNotificationHelper.showOngoingCountdownNotification(context)
+        }
+        setSnackbar("Widget & countdown refreshed! Synced with system time.")
     }
 
     fun setSnackbar(msg: String?) {

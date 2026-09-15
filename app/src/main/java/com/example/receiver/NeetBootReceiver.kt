@@ -10,8 +10,11 @@ import com.example.widget.NeetCountdownWidgetProvider
 class NeetBootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
-            intent.action == Intent.ACTION_MY_PACKAGE_REPLACED
+        val action = intent.action
+        if (action == Intent.ACTION_BOOT_COMPLETED ||
+            action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+            action == "android.intent.action.QUICKBOOT_POWERON" ||
+            action == "com.htc.intent.action.QUICKBOOT_POWERON"
         ) {
             // Restore channel and schedule all milestones
             NeetNotificationHelper.createNotificationChannel(context)
@@ -26,8 +29,15 @@ class NeetBootReceiver : BroadcastReceiver() {
                 NeetNotificationHelper.scheduleDailyReminder(context, hour, minute)
             }
 
-            // Refresh home screen widget
+            // Restore background periodic widget updates and refresh all widgets immediately
+            NeetNotificationHelper.scheduleWidgetPeriodicUpdates(context)
             NeetCountdownWidgetProvider.updateAllWidgets(context)
+            com.example.service.NeetLiveWidgetService.start(context)
+
+            // Restore ongoing background countdown notification if enabled
+            if (NeetNotificationHelper.isOngoingNotificationEnabled(context)) {
+                NeetNotificationHelper.showOngoingCountdownNotification(context)
+            }
         }
     }
 }

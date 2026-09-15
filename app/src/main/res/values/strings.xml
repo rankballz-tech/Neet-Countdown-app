@@ -3,4 +3,6 @@
     <string name="widget_description">Live realtime countdown widget for NEET UG 2027 Exam (May 2, 2027, 2:00 PM).</string>
     <string name="notification_channel_name">NEET 2027 Exam Alerts</string>
     <string name="notification_channel_desc">Milestone alerts and daily study reminders for NEET 2027</string>
+    <string name="notification_channel_ongoing_name">NEET 2027 Live Status</string>
+    <string name="notification_channel_ongoing_desc">Persistent background countdown ticker in notification bar and lock screen</string>
 </resources>

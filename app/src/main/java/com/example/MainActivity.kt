@@ -80,6 +80,13 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        NeetNotificationHelper.scheduleWidgetPeriodicUpdates(this)
+        com.example.widget.NeetCountdownWidgetProvider.updateAllWidgets(this)
+        com.example.service.NeetLiveWidgetService.start(this)
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -232,7 +239,14 @@ fun NeetCountdownApp(
                     dailyReminderHour = uiState.dailyReminderHour,
                     dailyReminderMinute = uiState.dailyReminderMinute,
                     onToggleDailyReminder = { viewModel.toggleDailyReminder(it) },
-                    onSelectTime = { hour, minute -> viewModel.updateDailyReminderTime(hour, minute) }
+                    onSelectTime = { hour, minute -> viewModel.updateDailyReminderTime(hour, minute) },
+                    ongoingNotificationEnabled = uiState.ongoingNotificationEnabled,
+                    onToggleOngoingNotification = { enabled ->
+                        if (enabled && !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        viewModel.toggleOngoingNotification(context, enabled)
+                    }
                 )
             }
 

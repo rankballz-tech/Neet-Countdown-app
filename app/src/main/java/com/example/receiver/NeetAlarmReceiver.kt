@@ -52,6 +52,20 @@ class NeetAlarmReceiver : BroadcastReceiver() {
 
             NeetConstants.ACTION_UPDATE_WIDGET -> {
                 NeetCountdownWidgetProvider.updateAllWidgets(context)
+                com.example.service.NeetLiveWidgetService.start(context)
+                if (NeetNotificationHelper.isOngoingNotificationEnabled(context)) {
+                    NeetNotificationHelper.showOngoingCountdownNotification(context)
+                }
+                // Schedule the next periodic update to maintain continuous background updates
+                NeetNotificationHelper.scheduleWidgetPeriodicUpdates(context)
+            }
+
+            NeetConstants.ACTION_REFRESH_WIDGET -> {
+                NeetCountdownWidgetProvider.updateAllWidgets(context)
+                com.example.service.NeetLiveWidgetService.start(context)
+                if (NeetNotificationHelper.isOngoingNotificationEnabled(context)) {
+                    NeetNotificationHelper.showOngoingCountdownNotification(context)
+                }
             }
         }
     }

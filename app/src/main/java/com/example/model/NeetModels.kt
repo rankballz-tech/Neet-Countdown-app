@@ -26,11 +26,15 @@ object NeetConstants {
     const val ACTION_UPDATE_WIDGET = "com.example.ACTION_UPDATE_WIDGET"
 
     const val CHANNEL_ID = "neet_2027_countdown_alerts"
+    const val CHANNEL_ONGOING_ID = "neet_ongoing_live_countdown"
     const val PREFS_NAME = "neet_countdown_prefs"
     const val KEY_DAILY_REMINDER_ENABLED = "daily_reminder_enabled"
     const val KEY_DAILY_REMINDER_HOUR = "daily_reminder_hour"
     const val KEY_DAILY_REMINDER_MINUTE = "daily_reminder_minute"
+    const val KEY_ONGOING_NOTIFICATION_ENABLED = "ongoing_notification_enabled"
     const val KEY_TIMEZONE_IST = "timezone_ist_mode"
+
+    const val ONGOING_NOTIFICATION_ID = 9001
 }
 
 data class CountdownState(

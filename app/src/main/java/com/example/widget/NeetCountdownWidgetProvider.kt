@@ -14,22 +14,52 @@ import com.example.model.NeetConstants
 
 class NeetCountdownWidgetProvider : AppWidgetProvider() {
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        com.example.notification.NeetNotificationHelper.scheduleWidgetPeriodicUpdates(context)
+        updateAllWidgets(context)
+        com.example.service.NeetLiveWidgetService.start(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        com.example.notification.NeetNotificationHelper.cancelWidgetPeriodicUpdates(context)
+        com.example.service.NeetLiveWidgetService.stop(context)
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        com.example.notification.NeetNotificationHelper.scheduleWidgetPeriodicUpdates(context)
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
         }
+        com.example.service.NeetLiveWidgetService.start(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == NeetConstants.ACTION_REFRESH_WIDGET ||
-            intent.action == NeetConstants.ACTION_UPDATE_WIDGET
+        val action = intent.action
+        if (action == NeetConstants.ACTION_REFRESH_WIDGET ||
+            action == NeetConstants.ACTION_UPDATE_WIDGET ||
+            action == Intent.ACTION_TIME_TICK ||
+            action == Intent.ACTION_TIME_CHANGED ||
+            action == Intent.ACTION_TIMEZONE_CHANGED
         ) {
             updateAllWidgets(context)
+            com.example.notification.NeetNotificationHelper.scheduleWidgetPeriodicUpdates(context)
+            com.example.service.NeetLiveWidgetService.start(context)
+
+            if (action == NeetConstants.ACTION_REFRESH_WIDGET) {
+                val state = CountdownState.calculate(isIstMode = true)
+                android.widget.Toast.makeText(
+                    context,
+                    "NEET 2027: ${state.days}d ${state.hours}h ${state.minutes}m ${state.seconds}s",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 
@@ -37,24 +67,28 @@ class NeetCountdownWidgetProvider : AppWidgetProvider() {
         fun updateAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
-            appWidgetId: Int
+            appWidgetId: Int,
+            state: CountdownState = CountdownState.calculate(isIstMode = true)
         ) {
-            val state = CountdownState.calculate(isIstMode = true)
-
             val views = RemoteViews(context.packageName, R.layout.widget_neet_countdown)
 
-            // Populate countdown text values
+            // Populate Days : Hours : Minutes : Seconds countdown
             views.setTextViewText(R.id.widget_tv_days, state.days.toString())
             views.setTextViewText(R.id.widget_tv_hours, String.format("%02d", state.hours))
             views.setTextViewText(R.id.widget_tv_mins, String.format("%02d", state.minutes))
             views.setTextViewText(R.id.widget_tv_secs, String.format("%02d", state.seconds))
 
+            val timeStr = try {
+                java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"))
+            } catch (e: Exception) {
+                ""
+            }
+
             val statusText = when {
                 state.isExamStarted -> "NEET 2027 In Progress / Concluded!"
-                state.days < 7 -> "FINAL SPRINT! Revision mode on."
-                state.days < 30 -> "${state.days} days left! Daily mock tests & NCERT review."
-                state.days < 100 -> "100-Day Zone: Speed, Accuracy & Biology mastery."
-                else -> "${state.totalDays} Days Left • Target: 720/720 • Dream GMC"
+                state.days < 7 -> "FINAL SPRINT! • Target: 720 • $timeStr"
+                state.days < 30 -> "${state.days}d Left • NCERT & Mocks • $timeStr"
+                else -> "${state.totalDays} Days Left • Target: 720 • Synced $timeStr"
             }
             views.setTextViewText(R.id.widget_tv_status, statusText)
 

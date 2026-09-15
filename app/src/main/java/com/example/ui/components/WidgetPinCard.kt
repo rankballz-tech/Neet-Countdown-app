@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Button
@@ -131,18 +132,22 @@ fun WidgetPinCard(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(3.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         PreviewChip(value = "${state.days}", label = "DAYS", color = PrimaryCyan, modifier = Modifier.weight(1f))
-                        PreviewChip(value = String.format("%02d", state.hours), label = "HRS", color = Color.White, modifier = Modifier.weight(1f))
-                        PreviewChip(value = String.format("%02d", state.minutes), label = "MIN", color = Color.White, modifier = Modifier.weight(1f))
-                        PreviewChip(value = String.format("%02d", state.seconds), label = "SEC", color = AccentEmerald, modifier = Modifier.weight(1f))
+                        Text(":", color = Color(0xFF64748B), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        PreviewChip(value = String.format("%02d", state.hours), label = "HOURS", color = Color.White, modifier = Modifier.weight(1f))
+                        Text(":", color = Color(0xFF64748B), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        PreviewChip(value = String.format("%02d", state.minutes), label = "MINS", color = Color.White, modifier = Modifier.weight(1f))
+                        Text(":", color = Color(0xFF64748B), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        PreviewChip(value = String.format("%02d", state.seconds), label = "SECS", color = AccentEmerald, modifier = Modifier.weight(1f))
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Aim for 720/720 • Tap to open app or refresh",
+                        text = "Days : hours : minutes : seconds live countdown • Tap refresh to sync",
                         fontSize = 10.sp,
                         color = Color(0xFF64748B),
                         modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -173,6 +178,26 @@ fun WidgetPinCard(
                     text = "Add Widget to Home Screen",
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = AccentEmerald,
+                    modifier = Modifier.size(15.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Native live ticker counts down every second • Tap refresh icon for instant sync.",
+                    fontSize = 11.sp,
+                    color = Color(0xFF94A3B8)
                 )
             }
         }
